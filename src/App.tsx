@@ -1,122 +1,84 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState } from 'react'
 import './App.css'
 
+const SEC_IN_A_MIN = 60;
+const MS_IN_A_SEC = 1000;
+const STEP = 100;
+const START_TIMER = 5 * SEC_IN_A_MIN * MS_IN_A_SEC;
+
+interface PlayerTimer {
+  name: string;
+  time: number;
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [isRunning, setIsRunning] = useState(false);
+  const pause = () => { setIsRunning(false) };
+  const resume = () => { setIsRunning(true) };
+
+  const [timers, setTimers] = useState<PlayerTimer[]>([
+    { name: 'Player 0', time: START_TIMER },
+    { name: 'Player 1', time: START_TIMER },
+    { name: 'Player 2', time: START_TIMER },
+  ]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  const timeToStr = (time: number) => {
+    const ms = time % 1000;
+    time = (time - ms) / 1000;
+    const sec = time % 60;
+    time = (time - sec) / 60;
+    const min = time % 60;
+
+    const minStr = min.toString().padStart(2, '0');
+    const secStr = sec.toString().padStart(2, '0');
+
+    return `${minStr}:${secStr}`;
+  }
+  const playerToStr = (timer: PlayerTimer) => {
+    return `${timer.name}: ${timeToStr(timer.time)}`;
+  }
+
+
+  const countdown = () => {
+    if (!isRunning) return;
+
+    const newTimers = [...timers];
+    newTimers[currentIdx] = {
+      ...newTimers[currentIdx],
+      time: newTimers[currentIdx].time - STEP,
+    };
+    setTimers(newTimers);
+  }
+  const pass = () => {
+    setCurrentIdx((currentIdx + 1) % timers.length);
+  }
+
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const loopId = setInterval(() => {
+      countdown();
+    }, STEP)
+
+    return () => clearInterval(loopId);
+  }, [timers, isRunning])
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      {timers && timers.map((timer, idx) => {
+        if (currentIdx === idx) return;
 
-      <div className="ticks"></div>
+        return <p key={idx}>{playerToStr(timer)}</p>
+      })}
+      <h1>{playerToStr(timers[currentIdx])} {!isRunning && '(paused)' }</h1>
+      <button onClick={pass}>PASS TURN</button>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      <br /><br />
+      {isRunning && <button onClick={pause}>Pause</button> }
+      {!isRunning && <button onClick={resume}>Resume</button> }
     </>
-  )
+  );
 }
 
-export default App
+export default App;
